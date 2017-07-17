@@ -8,9 +8,7 @@ class AnyEvent::ProcessPool::Process {
   use AnyEvent::ProcessPool::Task;
   use AnyEvent::ProcessPool::Util 'next_id';
   use AnyEvent;
-  use Carp;
   use Config;
-  use Guard 'scope_guard';
   use String::Escape 'backslash';
 
   has Undef|Code|AnyEvent::CondVar $.on_ready is ro;
@@ -24,12 +22,15 @@ class AnyEvent::ProcessPool::Process {
   has $!ipc is ro = AnyEvent::Open3::Simple->new(
     on_start  => sub{ $self->_on_start(@_) },
     on_stdout => sub{ $self->_on_read(@_) },
-    on_stderr => sub{ carp "AnyEvent::ProcessPool::Worker: $_[1]" },
-    on_error  => sub{ croak $_[0] },
+    on_stderr => sub{ warn "AnyEvent::ProcessPool::Worker: $_[1]\n" },
+    on_error  => sub{ die "error launching worker process: $_[0]" },
+    on_signal => sub{
+      warn "worker terminated in response to signal: $_[1]";
+      $self->_clear_proc;
+    },
     on_fail   => sub{
       warn "worker terminated with non-zero exit status: $_[1]";
-      $_[0]->close;
-      undef $proc;
+      $self->_clear_proc;
     },
   );
 
@@ -61,6 +62,12 @@ class AnyEvent::ProcessPool::Process {
     return sub{ $cv->recv };
   }
 
+  method _clear_proc {
+    return unless $proc;
+    $proc->close;
+    undef $proc;
+  }
+
   method _on_start($process, $program, @args?) {
     $proc = $process;
     $proc->user({reqs => 0});
@@ -69,13 +76,6 @@ class AnyEvent::ProcessPool::Process {
   }
 
   method _on_read($process, $line) {
-    scope_guard{
-      if ($proc && $max_reqs > 0 && $proc->user->{reqs} == $max_reqs) {
-        $proc->close;
-        undef $proc;
-      }
-    };
-
     my $cv = shift @pending;
     my $task = AnyEvent::ProcessPool::Task->decode($line);
     my $result = eval{ $task->result };
@@ -87,6 +87,11 @@ class AnyEvent::ProcessPool::Process {
     }
 
     $on_task->($self) if $on_task;
+
+    $self->_clear_proc
+      if $proc
+      && $max_reqs > 0
+      && $proc->user->{reqs} == $max_reqs;
   }
 }
 

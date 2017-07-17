@@ -15,7 +15,6 @@ requires 'AnyEvent::Open3::Simple', '0';
 # Misc
 requires 'Data::Dump::Streamer', '0';
 requires 'Data::UUID::MT',       '0';
-requires 'Guard',                '0';
 requires 'String::Escape',       '0';
 
 # Testing
