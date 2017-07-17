@@ -1,4 +1,4 @@
-requires 'perl'                    => '5.014';
+requires 'perl'                    => '>= 5.014, != 5.018, != 5.020';
 requires 'AnyEvent'                => '0';
 requires 'AnyEvent::Open3::Simple' => '0';
 requires 'Data::Dump::Streamer'    => '0';

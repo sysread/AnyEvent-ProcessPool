@@ -99,11 +99,16 @@ class AnyEvent::ProcessPool {
 
 =head1 DIAGNOSTICS
 
-=head1 SEE ALSO
+=head1 INCOMPATIBILITIES
+
+=head1 ALTERNATIVES
 
 =over
 
 =item L<Parallel::ForkManager>
+
+Highly reliable, but blocking and difficult to integrate into non-blocking
+code.
 
 =back
 
