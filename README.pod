@@ -4,11 +4,34 @@
 
 =head1 NAME
 
-AnyEvent::ProcessPool - thing
+AnyEvent::ProcessPool - A multi-process pool for Perl
 
 =head1 VERSION
 
 version 0.01
+
+=head1 SYNOPSIS
+
+  use AnyEvent::ProcessPool;
+
+  my $pool = AnyEvent::ProcessPool->new(
+    workers  => 8,
+    max_reqs => 10,
+  );
+
+  my $async = $pool->run(sub{
+    # do stuff...
+  });
+
+  my $result = $async->();
+
+=head1 DESCRIPTION
+
+=head1 METHODS
+
+=head2 new
+
+=head2 run
 
 =head1 AUTHOR
 

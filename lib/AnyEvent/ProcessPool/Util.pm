@@ -1,5 +1,7 @@
 package AnyEvent::ProcessPool::Util;
 
+# ABSTRACT: A multi-process pool for Perl
+
 use strict;
 use warnings;
 use v5.10;

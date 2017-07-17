@@ -1,5 +1,6 @@
 use Dios {accessors => 'lvalue'};
 
+# ABSTRACT: A multi-process pool for Perl
 # PODNAME: AnyEvent::ProcessPool::Task
 
 class AnyEvent::ProcessPool::Task {

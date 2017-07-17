@@ -1,5 +1,7 @@
 package AnyEvent::ProcessPool::TestUtil;
 
+# ABSTRACT: A multi-process pool for Perl
+
 use strict;
 use warnings;
 use parent 'Exporter';

@@ -1,6 +1,7 @@
 use Dios {accessors => 'lvalue'};
 use v5.10;
 
+# ABSTRACT: A multi-process pool for Perl
 # PODNAME: AnyEvent::ProcessPool::Worker
 
 class AnyEvent::ProcessPool::Worker {

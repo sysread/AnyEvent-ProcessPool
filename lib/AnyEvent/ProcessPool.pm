@@ -1,7 +1,26 @@
 use Dios {accessors => 'lvalue'};
 
-# ABSTRACT: thing
+# ABSTRACT: A multi-process pool for Perl
 # PODNAME: AnyEvent::ProcessPool
+
+=head1 SYNOPSIS
+
+  use AnyEvent::ProcessPool;
+
+  my $pool = AnyEvent::ProcessPool->new(
+    workers  => 8,
+    max_reqs => 10,
+  );
+
+  my $async = $pool->run(sub{
+    # do stuff...
+  });
+
+  my $result = $async->();
+
+=head1 DESCRIPTION
+
+=cut
 
 class AnyEvent::ProcessPool {
   use AnyEvent;
@@ -17,6 +36,14 @@ class AnyEvent::ProcessPool {
   has %!assigned is rw;
   has %!ready    is rw;
   has $!started  is rw = 0;
+
+=head1 METHODS
+
+=head2 new
+
+=head2 run
+
+=cut
 
   method start {
     foreach (1 .. $workers) {
