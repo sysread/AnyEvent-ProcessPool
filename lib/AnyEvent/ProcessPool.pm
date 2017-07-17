@@ -82,7 +82,8 @@ class AnyEvent::ProcessPool {
     # do stuff...
   });
 
-  if ($result eq '...') { # blocks until $result is populated
+  if ($result eq '...') {
+    # blocks until $result is populated
   }
 
 =head1 DESCRIPTION
@@ -166,8 +167,8 @@ code.
 
 =item L<Coro::ProcessPool>
 
-Similar in function (and the author is likewise brilliant and dashing), but
-runs only under L<Coro> (which as of 6.513 has experimental support for 5.22!).
+Similar in function, but runs only under L<Coro> (which as of 6.513 has
+experimental support for 5.22).
 
 =back
 
