@@ -4,6 +4,7 @@ requires 'Data::Dump::Streamer'    => 0;
 requires 'Data::UUID::MT'          => 0;
 requires 'Dios'                    => 0;
 requires 'Guard'                   => 0;
+requires 'String::Escape'          => 0;
 requires 'Want'                    => 0;
 
 on test => sub{
