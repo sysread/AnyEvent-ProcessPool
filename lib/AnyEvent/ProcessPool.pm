@@ -20,6 +20,11 @@ use Dios {accessors => 'lvalue'};
 
 =head1 DESCRIPTION
 
+Executes code using a pool a forked Perl subprocesses. Supports configurable
+pool size, automatically restarting processes after a configurable number of
+requests, and closures (with the caveat that changes are not propagated back to
+the parent process).
+
 =cut
 
 class AnyEvent::ProcessPool {
@@ -51,8 +56,7 @@ class AnyEvent::ProcessPool {
         max_reqs => $max_reqs,
         on_task  => sub{
           my $worker = shift;
-          my $id = shift @{$assigned{$worker->id}}
-            or die "no task id assigned to worker " . $worker->id;
+          my $id = shift @{$assigned{$worker->id}};
           push @pool, $worker;
           $self->process_pending;
           $ready{$id}->send;
@@ -92,5 +96,17 @@ class AnyEvent::ProcessPool {
     }
   }
 }
+
+=head1 DIAGNOSTICS
+
+=head1 SEE ALSO
+
+=over
+
+=item L<Parallel::ForkManager>
+
+=back
+
+=cut
 
 1;
