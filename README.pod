@@ -27,11 +27,26 @@ version 0.01
 
 =head1 DESCRIPTION
 
+Executes code using a pool a forked Perl subprocesses. Supports configurable
+pool size, automatically restarting processes after a configurable number of
+requests, and closures (with the caveat that changes are not propagated back to
+the parent process).
+
 =head1 METHODS
 
 =head2 new
 
 =head2 run
+
+=head1 DIAGNOSTICS
+
+=head1 SEE ALSO
+
+=over
+
+=item L<Parallel::ForkManager>
+
+=back
 
 =head1 AUTHOR
 
