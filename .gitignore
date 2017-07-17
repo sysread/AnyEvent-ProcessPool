@@ -1,0 +1,5 @@
+*.pmat
+*.swp
+/.build
+/Argon*
+/scratch*
