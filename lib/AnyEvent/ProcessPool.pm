@@ -147,7 +147,7 @@ worker will be automatically restarted.
 L<PPR> (sub-dep of L<Dios>) throws strange parsing errors when running this
 module under 5.18. I have not had time to dig into them fully to determine
 whether or not this is a result of a bug in C<AnyEvent::ProcessPool>, L<PPR>,
-or Perl 5.18.
+or 5.18.
 
 =head2 Perl 5.20
 
@@ -163,6 +163,11 @@ abysmally under 5.20, causing most actions to fail or hang indefinitely.
 
 Highly reliable, but blocking and difficult to integrate into non-blocking
 code.
+
+=item L<Coro::ProcessPool>
+
+Similar in function (and the author is likewise brilliant and dashing), but
+runs only under L<Coro> (which as of 6.513 has experimental support for 5.22!).
 
 =back
 
