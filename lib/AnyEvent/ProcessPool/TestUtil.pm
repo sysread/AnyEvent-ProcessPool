@@ -17,7 +17,7 @@ our @EXPORT = qw(
 sub timed_subtest {
   my $name    = shift;
   my $code    = pop;
-  my $timeout = shift || 10;
+  my $timeout = shift || 30;
   my $timed_out;
 
   subtest "$name (${timeout}s timeout)" => sub {
@@ -33,7 +33,7 @@ sub timed_subtest {
     };
 
     if ($@) {
-      die unless $@ eq "alarm\n";
+      die $@ unless $@ eq "alarm\n";
       note "Failsafe timeout triggered for subtest '$name' after $timeout seconds";
       $timed_out = 1;
     }

@@ -8,16 +8,16 @@ use AnyEvent::ProcessPool;
 
 sub pool (%) {
   my %param = @_;
-  my $from  = delete $param{from};
-  my $to    = delete $param{to};
+  my $in    = delete $param{in};
+  my $out   = delete $param{out};
   my $pool  = AnyEvent::ProcessPool->new(%param);
 
-  while (defined(my $task = $from->())) {
+  while (defined(my $task = $in->())) {
   }
 }
 
-sub from (&) { return (from => $_[0]) }
-sub to   (&) { return (to   => $_[0]) }
+sub in  (&) { return (in  => $_[0]) }
+sub out (&) { return (out => $_[0]) }
 
 =cut
 pool workers => 4,
