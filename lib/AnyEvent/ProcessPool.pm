@@ -107,12 +107,13 @@ sub new {
   my $self = bless {
     workers  => $param{workers} || croak 'expected parameter "workers"',
     limit    => $param{limit},
-    pool     => [],
-    queue    => [],
+    pool     => [], # array of AE::PP::Process objects
+    queue    => [], # array of [id, code] tasks
     complete => {}, # task_id => condvar: signals result to caller
     pending  => {}, # task_id => condvar: signals result internally
   }, $class;
 
+  # Initialize workers but do not yet wait for them to be started
   foreach (1 .. $self->{workers}) {
     my $worker = AnyEvent::ProcessPool::Process->new(limit => $self->{limit});
     push @{$self->{pool}}, $worker;
@@ -125,12 +126,14 @@ sub DESTROY {
   my ($self, $global) = @_;
 
   if ($self) {
+    # Unblock watchers for any remaining pending tasks
     if (ref $self->{pending}) {
       foreach my $cv (values %{$self->{pending}}) {
         $cv->croak('AnyEvent::ProcessPool destroyed with pending tasks remaining');
       }
     }
 
+    # Terminate any workers still alive
     if (ref $self->{pool}) {
       $_->stop foreach @{$self->{pool}};
     }
