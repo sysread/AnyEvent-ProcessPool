@@ -4,13 +4,13 @@ use AnyEvent::ProcessPool;
 use AnyEvent;
 use Time::HiRes qw(time);
 
-timed_subtest 'basics' => sub{
+subtest 'basics' => sub{
   ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 2, workers => 2), 'ctor';
   ok my $async = $pool->async(sub{ 42 }), 'run';
   is $async->(), 42, 'result';
 };
 
-timed_subtest 'queue' => sub{
+subtest 'queue' => sub{
   ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 4, workers => 2), 'ctor';
 
   my @seq = 0 .. 10;
