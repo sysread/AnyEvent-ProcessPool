@@ -1,98 +1,121 @@
-use Dios {accessors => 'lvalue'};
+package AnyEvent::ProcessPool::Process;
 
-# ABSTRACT: A multi-process pool for Perl
-# PODNAME: AnyEvent::ProcessPool::Process
+use strict;
+use warnings;
 
-class AnyEvent::ProcessPool::Process {
-  use AnyEvent::Open3::Simple;
-  use AnyEvent::ProcessPool::Task;
-  use AnyEvent::ProcessPool::Util 'next_id';
-  use AnyEvent;
-  use Config;
-  use String::Escape 'backslash';
+use Config;
+use AnyEvent;
+use AnyEvent::Open3::Simple;
+use AnyEvent::ProcessPool::Task;
+use AnyEvent::ProcessPool::Util 'next_id';
+use String::Escape 'backslash';
+use Try::Catch;
 
-  has Undef|Code|AnyEvent::CondVar $.on_ready is ro;
-  has Undef|Code $.on_task is ro;
-  has Int $.max_reqs is ro //= 0;
-  has Str $.id is ro = next_id;
+my $perl = $Config{perlpath};
+my $ext  = $Config{_exe};
+$perl .= $ext if $^O ne 'VMS' && $perl !~ /$ext$/i;
+my @inc = map { sprintf('-I%s', backslash($_)) } @_, @INC;
+my $cmd = join ' ', @inc, q(-MAnyEvent::ProcessPool::Worker -e 'AnyEvent::ProcessPool::Worker->new->run');
 
-  has $!started is rw;
-  has @!pending is rw;
-  has $!proc is rw;
-  has $!ipc is ro = AnyEvent::Open3::Simple->new(
-    on_start  => sub{ $self->_on_start(@_) },
-    on_stdout => sub{ $self->_on_read(@_) },
-    on_stderr => sub{ warn "AnyEvent::ProcessPool::Worker: $_[1]\n" },
-    on_error  => sub{ die "error launching worker process: $_[0]" },
+sub new {
+  my ($class, %param) = @_;
+  return bless {
+    id      => next_id,
+    limit   => $param{limit},
+    started => undef,
+    process => undef,
+    ps      => undef,
+    pending => [],
+  }, $class;
+}
+
+sub pid {
+  my $self = shift;
+  return $self->{ps}->pid if $self->is_running;
+}
+
+sub is_running {
+  my $self = shift;
+  return defined $self->{started}
+      && $self->{started}->ready;
+}
+
+sub await {
+  my $self = shift;
+  $self->start unless $self->is_running;
+  $self->{started}->recv;
+}
+
+sub stop {
+  my $self = shift;
+  if (defined $self->{process}) {
+    $self->{ps}->close;
+    undef $self->{started};
+    undef $self->{process};
+    undef $self->{ps};
+  }
+}
+
+sub start {
+  my $self = shift;
+  $self->{started} = AE::cv;
+  $self->{process} = AnyEvent::Open3::Simple->new(
+    on_start => sub{
+      $self->{started}->send;
+    },
+    on_stdout => sub{
+      my ($ps, $line) = @_;
+      my $task = AnyEvent::ProcessPool::Task->decode($line);
+      my $cv = shift @{$self->{pending}};
+      my $result;
+
+      try {
+        $result = $task->result;
+        $cv->send($result);
+      }
+      catch {
+        $cv->croak($_);
+      };
+
+      if ($ps->user->{reqs} <= 0) {
+        $self->stop;
+      }
+    },
+    on_stderr => sub{
+      warn "AnyEvent::ProcessPool::Worker: $_[1]\n";
+    },
+    on_error => sub{
+      die "error launching worker process: $_[0]";
+    },
     on_signal => sub{
       warn "worker terminated in response to signal: $_[1]";
-      $self->_clear_proc;
+      $self->stop;
     },
-    on_fail   => sub{
+    on_fail => sub{
       warn "worker terminated with non-zero exit status: $_[1]";
-      $self->_clear_proc;
+      $self->stop;
     },
   );
 
-  method is_running { defined $proc }
+  $self->{process}->run("$perl $cmd", sub{
+    my $ps = shift;
+    $ps->user({reqs => $self->{limit}});
+    $self->{ps} = $ps;
+  });
+}
 
-  method pid { defined $proc && $proc->pid }
+sub run {
+  my ($self, $code) = @_;
+  $self->await;
 
-  method pending { scalar @pending }
+  my $cv = AE::cv;
+  push @{$self->{pending}}, $cv;
 
-  method start {
-    return if $proc;
-    $started = AE::cv;
-    my $perl = $Config{perlpath};
-    my $ext  = $Config{_exe};
-    $perl .= $ext if $^O ne 'VMS' && $perl !~ /$ext$/i;
-    my @inc = map { sprintf('-I%s', backslash($_)) } @_, @INC;
-    my $cmd = join ' ', @inc, q(-MAnyEvent::ProcessPool::Worker -e 'AnyEvent::ProcessPool::Worker->new->run');
-    $ipc->run("$perl $cmd");
-  }
+  my $task = AnyEvent::ProcessPool::Task->new(code => $code);
+  $self->{ps}->say($task->encode);
+  --$self->{ps}->user->{reqs};
 
-  method run(Code $code --> Code) {
-    $self->start unless $proc;
-    $started->recv;
-    my $cv = AE::cv;
-    push @pending, $cv;
-    my $task = AnyEvent::ProcessPool::Task->new(code => $code);
-    $proc->say($task->encode);
-    ++$proc->user->{reqs};
-    return sub{ $cv->recv };
-  }
-
-  method _clear_proc {
-    return unless $proc;
-    $proc->close;
-    undef $proc;
-  }
-
-  method _on_start($process, $program, @args?) {
-    $proc = $process;
-    $proc->user({reqs => 0});
-    $started->send;
-    $on_ready->($self) if $on_ready;
-  }
-
-  method _on_read($process, $line) {
-    my $cv = shift @pending;
-    my $task = AnyEvent::ProcessPool::Task->decode($line);
-    my $result = eval{ $task->result };
-
-    if ($@) {
-      $cv->croak($@);
-    } else {
-      $cv->send($result);
-    }
-
-    $on_task->($self) if $on_task;
-
-    $self->_clear_proc
-      if $proc
-      && $max_reqs > 0
-      && $proc->user->{reqs} == $max_reqs;
-  }
+  return sub{ $cv->recv };
 }
 
 1;
