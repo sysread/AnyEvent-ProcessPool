@@ -1,6 +1,8 @@
 use Test2::Bundle::Extended;
 use AnyEvent::ProcessPool::TestUtil;
 use AnyEvent::ProcessPool;
+use AnyEvent;
+use Time::HiRes qw(time);
 
 timed_subtest 'basics' => sub{
   ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 2, workers => 2), 'ctor';
@@ -8,7 +10,7 @@ timed_subtest 'basics' => sub{
   is $async, 42, 'result';
 };
 
-timed_subtest 'queue' => sub{
+timed_subtest 'queue', 30, sub{
   ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 2, workers => 2), 'ctor';
 
   my @seq = 0 .. 10;

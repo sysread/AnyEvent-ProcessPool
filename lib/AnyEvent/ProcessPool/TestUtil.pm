@@ -4,10 +4,11 @@ package AnyEvent::ProcessPool::TestUtil;
 
 use strict;
 use warnings;
-use parent 'Exporter';
 use AnyEvent;
 use AnyEvent::Util;
 use Test2::Bundle::Extended;
+
+use parent 'Exporter';
 
 our @EXPORT = qw(
   timed_subtest
