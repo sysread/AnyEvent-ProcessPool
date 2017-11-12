@@ -4,7 +4,7 @@
 
 =head1 NAME
 
-AnyEvent::ProcessPool - A multi-process pool for Perl
+AnyEvent::ProcessPool - Asynchronously runs code concurrently in a pool of perl processes
 
 =head1 VERSION
 
