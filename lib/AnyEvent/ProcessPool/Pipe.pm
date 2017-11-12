@@ -1,4 +1,5 @@
 package AnyEvent::ProcessPool::Pipe;
+# ABSTRACT: (not finished)
 
 use strict;
 use warnings;

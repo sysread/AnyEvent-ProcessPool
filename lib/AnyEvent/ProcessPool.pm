@@ -6,7 +6,6 @@ use Dios {accessors => 'lvalue'};
 class AnyEvent::ProcessPool {
   use Carp;
   use AnyEvent;
-  use AnyEvent::ProcessPool::Async;
   use AnyEvent::ProcessPool::Process;
   use AnyEvent::ProcessPool::Util 'next_id';
   use Time::HiRes 'time';
