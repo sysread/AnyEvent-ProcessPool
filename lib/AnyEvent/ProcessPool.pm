@@ -4,10 +4,12 @@ use Dios {accessors => 'lvalue'};
 # PODNAME: AnyEvent::ProcessPool
 
 class AnyEvent::ProcessPool {
+  use Carp;
   use AnyEvent;
   use AnyEvent::ProcessPool::Async;
   use AnyEvent::ProcessPool::Process;
   use AnyEvent::ProcessPool::Util 'next_id';
+  use Time::HiRes 'time';
 
   has Int       $.workers  is req;
   has Undef|Int $.max_reqs is ro;
@@ -27,8 +29,8 @@ class AnyEvent::ProcessPool {
           my $worker = shift;
           my $id = shift @{$assigned{$worker->id}};
           push @pool, $worker;
-          $self->process_pending;
           $ready{$id}->send;
+          $self->process_pending;
         },
       );
     }
@@ -43,18 +45,21 @@ class AnyEvent::ProcessPool {
     push @queue, [$id, $code];
     $ready{$id} = AE::cv;
 
-    my $fetch = sub{
-      $ready{$id}->recv;
-      my $cv = $pending{$id};
-      delete $pending{$id};
-      delete $ready{$id};
-      $cv->();
-    };
-
     $self->process_pending;
 
-    tie my $async, 'AnyEvent::ProcessPool::Async', $fetch;
-    return $async;
+    return sub{
+      # Wait for task to be sent and result to be available
+      $ready{$id}->recv;
+
+      my $result = $pending{$id};
+
+      # Clean up
+      delete $pending{$id};
+      delete $ready{$id};
+
+      # Return result
+      $result->();
+    };
   }
 
   method process_pending {

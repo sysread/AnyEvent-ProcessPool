@@ -7,11 +7,11 @@ use Time::HiRes qw(time);
 timed_subtest 'basics' => sub{
   ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 2, workers => 2), 'ctor';
   ok my $async = $pool->async(sub{ 42 }), 'run';
-  is $async, 42, 'result';
+  is $async->(), 42, 'result';
 };
 
-timed_subtest 'queue', 30, sub{
-  ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 2, workers => 2), 'ctor';
+timed_subtest 'queue' => sub{
+  ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 4, workers => 2), 'ctor';
 
   my @seq = 0 .. 10;
   my @async;
@@ -21,7 +21,7 @@ timed_subtest 'queue', 30, sub{
   }
 
   foreach my $i (@seq) {
-    is $async[$i], $i, "result $i";
+    is $async[$i]->(), $i, "result $i";
   }
 };
 
