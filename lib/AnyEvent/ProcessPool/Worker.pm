@@ -1,23 +1,17 @@
-use Dios {accessors => 'lvalue'};
+package AnyEvent::ProcessPool::Worker;
+# ABSTRACT: The task executor code run in the worker process
+
+use strict;
+use warnings;
 use v5.10;
+require AnyEvent::ProcessPool::Task;
 
-# ABSTRACT: A multi-process pool for Perl
-# PODNAME: AnyEvent::ProcessPool::Worker
-
-class AnyEvent::ProcessPool::Worker {
-  use AnyEvent::ProcessPool::Task;
-
-  method run {
-    local $| = 1;
-    while (defined(my $line = <STDIN>)) {
-      say $self->do($line);
-    }
-  }
-
-  method do(Str $line) {
-    my $task = AnyEvent::ProcessPool::Task->decode($line);
+sub run {
+  local $| = 1;
+  while (defined(my $line = <STDIN>)) {
+    my $task = AnyEvent::ProcessPool::Task->new($line);
     $task->execute;
-    $task->encode;
+    say $task->encode;
   }
 }
 

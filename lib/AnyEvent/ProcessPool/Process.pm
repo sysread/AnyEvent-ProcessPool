@@ -1,4 +1,5 @@
 package AnyEvent::ProcessPool::Process;
+# ABSTRACT: Manages an individual worker process
 
 use strict;
 use warnings;
@@ -15,7 +16,7 @@ my $perl = $Config{perlpath};
 my $ext  = $Config{_exe};
 $perl .= $ext if $^O ne 'VMS' && $perl !~ /$ext$/i;
 my @inc = map { sprintf('-I%s', backslash($_)) } @_, @INC;
-my $cmd = join ' ', @inc, q(-MAnyEvent::ProcessPool::Worker -e 'AnyEvent::ProcessPool::Worker->new->run');
+my $cmd = join ' ', @inc, q(-MAnyEvent::ProcessPool::Worker -e 'AnyEvent::ProcessPool::Worker::run()');
 
 sub new {
   my ($class, %param) = @_;
@@ -65,7 +66,7 @@ sub start {
     },
     on_stdout => sub{
       my ($ps, $line) = @_;
-      my $task = AnyEvent::ProcessPool::Task->decode($line);
+      my $task = AnyEvent::ProcessPool::Task->new($line);
       my $cv = shift @{$self->{pending}};
       my $result;
 
@@ -111,7 +112,7 @@ sub run {
   my $cv = AE::cv;
   push @{$self->{pending}}, $cv;
 
-  my $task = AnyEvent::ProcessPool::Task->new(code => $code);
+  my $task = AnyEvent::ProcessPool::Task->new($code);
   $self->{ps}->say($task->encode);
   --$self->{ps}->user->{reqs};
 
