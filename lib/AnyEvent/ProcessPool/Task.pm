@@ -1,4 +1,5 @@
 package AnyEvent::ProcessPool::Task;
+# ABSTRACT: AnyEvent::ProcessPool work unit
 
 use strict;
 use warnings;

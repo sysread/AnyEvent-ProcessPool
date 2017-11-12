@@ -5,13 +5,13 @@ use AnyEvent;
 use Time::HiRes qw(time);
 
 subtest 'basics' => sub{
-  ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 2, workers => 2), 'ctor';
+  ok my $pool = AnyEvent::ProcessPool->new(limit => 2, workers => 2), 'ctor';
   ok my $async = $pool->async(sub{ 42 }), 'run';
-  is $async->(), 42, 'result';
+  is $async->recv, 42, 'result';
 };
 
 subtest 'queue' => sub{
-  ok my $pool = AnyEvent::ProcessPool->new(max_reqs => 4, workers => 2), 'ctor';
+  ok my $pool = AnyEvent::ProcessPool->new(limit => 4, workers => 2), 'ctor';
 
   my @seq = 0 .. 10;
   my @async;
@@ -21,7 +21,7 @@ subtest 'queue' => sub{
   }
 
   foreach my $i (@seq) {
-    is $async[$i]->(), $i, "result $i";
+    is $async[$i]->recv, $i, "result $i";
   }
 };
 

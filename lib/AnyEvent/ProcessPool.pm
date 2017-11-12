@@ -1,77 +1,5 @@
-use Dios {accessors => 'lvalue'};
-
-# ABSTRACT: A multi-process pool for Perl
-# PODNAME: AnyEvent::ProcessPool
-
-class AnyEvent::ProcessPool {
-  use Carp;
-  use AnyEvent;
-  use AnyEvent::ProcessPool::Process;
-  use AnyEvent::ProcessPool::Util 'next_id';
-  use Time::HiRes 'time';
-
-  has Int       $.workers  is req;
-  has Undef|Int $.max_reqs is ro;
-
-  has @!pool     is rw;
-  has @!queue    is rw;
-  has %!pending  is rw;
-  has %!assigned is rw;
-  has %!ready    is rw;
-  has $!started  is rw = 0;
-
-  method start {
-    foreach (1 .. $workers) {
-      push @pool, AnyEvent::ProcessPool::Process->new(
-        max_reqs => $max_reqs,
-        on_task  => sub{
-          my $worker = shift;
-          my $id = shift @{$assigned{$worker->id}};
-          push @pool, $worker;
-          $ready{$id}->send;
-          $self->process_pending;
-        },
-      );
-    }
-
-    $started = 1;
-  }
-
-  method async(Code $code --> Code) {
-    $self->start unless $started;
-
-    my $id = next_id;
-    push @queue, [$id, $code];
-    $ready{$id} = AE::cv;
-
-    $self->process_pending;
-
-    return sub{
-      # Wait for task to be sent and result to be available
-      $ready{$id}->recv;
-
-      my $result = $pending{$id};
-
-      # Clean up
-      delete $pending{$id};
-      delete $ready{$id};
-
-      # Return result
-      $result->();
-    };
-  }
-
-  method process_pending {
-    while (@queue && @pool) {
-      my $worker = shift @pool;
-      my $item = shift @queue;
-      my ($id, $code) = @$item;
-      $pending{$id} = $worker->run($code);
-      $assigned{$worker->id} //= [];
-      push @{$assigned{$worker->id}}, $id;
-    }
-  }
-}
+package AnyEvent::ProcessPool;
+# ABSTRACT: Asynchronously runs code concurrently in a pool of perl processes
 
 =head1 SYNOPSIS
 
@@ -177,5 +105,62 @@ experimental support for 5.22).
 =back
 
 =cut
+
+use strict;
+use warnings;
+use Carp;
+use AnyEvent;
+use AnyEvent::ProcessPool::Process;
+use AnyEvent::ProcessPool::Util 'next_id';
+
+sub new {
+  my ($class, %param) = @_;
+
+  my $self = bless {
+    workers  => $param{workers} || croak 'expected parameter "workers"',
+    limit    => $param{limit},
+    pool     => [],
+    queue    => [],
+    complete => {}, # task_id => condvar: signals result to caller
+    pending  => {}, # task_id => condvar: signals result internally
+  }, $class;
+
+  foreach (1 .. $self->{workers}) {
+    my $worker = AnyEvent::ProcessPool::Process->new(limit => $self->{limit});
+    push @{$self->{pool}}, $worker;
+  }
+
+  return $self;
+}
+
+sub async {
+  my ($self, $code) = @_;
+  my $id = next_id;
+  $self->{complete}{$id} = AE::cv;
+  push @{$self->{queue}}, [$id, $code];
+  $self->process_queue;
+  return $self->{complete}{$id};
+}
+
+sub process_queue {
+  my $self  = shift;
+  my $queue = $self->{queue};
+  my $pool  = $self->{pool};
+
+  while (@$queue && @$pool) {
+    my ($id, $code) = @{shift @$queue};
+    my $worker = shift @$pool;
+
+    $self->{pending}{$id} = $worker->run($code);
+
+    $self->{pending}{$id}->cb(sub{
+      $self->{complete}{$id}->send(shift->recv);
+      delete $self->{pending}{$id};
+      delete $self->{complete}{$id};
+      push @$pool, $worker;
+      $self->process_queue;
+    });
+  }
+}
 
 1;

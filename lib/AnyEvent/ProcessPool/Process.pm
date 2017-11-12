@@ -78,7 +78,7 @@ sub start {
         $cv->croak($_);
       };
 
-      if ($ps->user->{reqs} <= 0) {
+      if ($self->{limit} && $ps->user->{reqs} <= 0) {
         $self->stop;
       }
     },
@@ -100,7 +100,7 @@ sub start {
 
   $self->{process}->run("$perl $cmd", sub{
     my $ps = shift;
-    $ps->user({reqs => $self->{limit}});
+    $ps->user({reqs => $self->{limit}}) if $self->{limit};
     $self->{ps} = $ps;
   });
 }
@@ -114,9 +114,9 @@ sub run {
 
   my $task = AnyEvent::ProcessPool::Task->new($code);
   $self->{ps}->say($task->encode);
-  --$self->{ps}->user->{reqs};
+  --$self->{ps}->user->{reqs} if $self->{limit};
 
-  return sub{ $cv->recv };
+  return $cv;
 }
 
 1;
