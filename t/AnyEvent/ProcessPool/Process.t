@@ -56,4 +56,24 @@ subtest 'implicit run' => sub{
   is $async->recv->result, 42, 'expected result';
 };
 
+subtest 'includes' => sub{
+  subtest 'without' => sub{
+    my $proc = AnyEvent::ProcessPool::Process->new;
+    my $async = $proc->run(AnyEvent::ProcessPool::Task->new(sub{require TestModule; TestModule->foo}));
+    ok my $task = $async->recv, 'result';
+    ok $task->done, 'done';
+    ok $task->failed, 'failed';
+    like $task->result, qr/TestModule/, 'expected error message';
+  };
+
+  subtest 'with' => sub{
+    my $proc = AnyEvent::ProcessPool::Process->new(include => ['t/some/libs']);
+    my $async = $proc->run(AnyEvent::ProcessPool::Task->new(sub{require TestModule; TestModule->foo}));
+    ok my $task = $async->recv, 'result';
+    ok $task->done, 'done';
+    ok !$task->failed, '!failed';
+    is $task->result, 'bar', 'expected result';
+  };
+};
+
 done_testing;
