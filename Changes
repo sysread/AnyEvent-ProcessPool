@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.06 2017-11-13
 - Added support for alternately passing a "task class" + args rather than a
   code ref
 
