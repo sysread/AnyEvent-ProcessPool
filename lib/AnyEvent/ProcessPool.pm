@@ -15,6 +15,7 @@ sub new {
   my $self = bless {
     workers  => $param{workers} || cpu_count,
     limit    => $param{limit},
+    include  => $param{include},
     pool     => [], # array of AE::PP::Process objects
     queue    => [], # array of [id, code] tasks
     complete => {}, # task_id => condvar: signals result to caller
@@ -23,7 +24,10 @@ sub new {
 
   # Initialize workers but do not yet wait for them to be started
   foreach (1 .. $self->{workers}) {
-    my $worker = AnyEvent::ProcessPool::Process->new(limit => $self->{limit});
+    my $worker = AnyEvent::ProcessPool::Process->new(
+      limit   => $self->{limit},
+      include => $self->{include},
+    );
     push @{$self->{pool}}, $worker;
   }
 
@@ -107,6 +111,7 @@ sub process_queue {
   my $pool = AnyEvent::ProcessPool->new(
     workers => 8,
     limit   => 10,
+    include => ['lib', 'some/lib/path'],
   );
 
   my $condvar = $pool->async(sub{
@@ -136,6 +141,11 @@ Optional attribute that causes a worker process to be restarted after
 performing C<limit> tasks. This can be useful when calling code which may be
 leaky. When unspecified or set to zero, worker processes will only be restarted
 if it unexpectedly fails.
+
+=head2 include
+
+An optional array ref of paths to add to the perl command string used to start
+the sub-process worker.
 
 =head1 METHODS
 

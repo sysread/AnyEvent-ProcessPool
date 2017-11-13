@@ -1,6 +1,8 @@
 {{$NEXT}}
 - Explicitly drop MSWin32 support intests (AnyEvent::Open3::Simple does not
   support MSWin32 due to lack of support for writing to process pipes)
+- Support for specifying includes to the perl path (e.g., -Ilib) in the worker
+  process
 
 0.04 2017-11-13
 - More straightforward error handling

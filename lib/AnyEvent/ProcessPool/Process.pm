@@ -20,9 +20,12 @@ my $cmd = join ' ', @inc, q(-MAnyEvent::ProcessPool::Worker -e 'AnyEvent::Proces
 
 sub new {
   my ($class, %param) = @_;
+  my $include = $param{include} || [];
+
   return bless {
     id      => next_id,
     limit   => $param{limit},
+    include => join(' ', map { sprintf('-I%s', backslash($_)) } @$include),
     started => undef,
     process => undef,
     ps      => undef,
@@ -102,7 +105,7 @@ sub start {
     },
   );
 
-  $self->{process}->run("$perl $cmd", sub{
+  $self->{process}->run("$perl $self->{include} $cmd", sub{
     my $ps = shift;
     $ps->user({reqs => $self->{limit}}) if $self->{limit};
     $self->{ps} = $ps;
