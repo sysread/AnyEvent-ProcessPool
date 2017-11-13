@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.04 2017-11-13
 - More straightforward error handling
 - Existing pool may be specified to pipeline
 
