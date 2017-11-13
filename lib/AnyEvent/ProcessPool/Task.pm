@@ -3,25 +3,24 @@ package AnyEvent::ProcessPool::Task;
 use strict;
 use warnings;
 use Carp;
-use Const::Fast;
 use Data::Dump::Streamer;
 use MIME::Base64;
 use Try::Catch;
 
-const our $READY => 0;
-const our $DONE  => 1;
-const our $FAIL  => 2;
+use constant READY => 1;
+use constant DONE  => 2;
+use constant FAIL  => 4;
 
 sub new {
   my ($class, $code, $args) = @_;
-  bless [$READY, [$code, $args]], $class;
+  bless [READY, [$code, $args]], $class;
 }
 
-sub done   { $_[0][0] & $DONE }
-sub failed { $_[0][0] & $FAIL }
+sub done   { $_[0][0] & DONE }
+sub failed { $_[0][0] & FAIL }
 
 sub result {
-  return $_[0][1] if $_[0][0] & $DONE;
+  return $_[0][1] if $_[0][0] & DONE;
   return;
 }
 
@@ -31,14 +30,14 @@ sub execute {
   try {
     my ($code, $args) = @{$self->[1]};
     $self->[1] = $code->(@$args);
-    $self->[0] = $DONE;
+    $self->[0] = DONE;
   }
   catch {
-    $self->[0] = $DONE | $FAIL;
+    $self->[0] = DONE | FAIL;
     $self->[1] = $_;
   };
 
-  return $self->[0] & $FAIL ? 0 : 1;
+  return $self->[0] & FAIL ? 0 : 1;
 }
 
 sub encode {
