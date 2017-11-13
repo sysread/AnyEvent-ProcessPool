@@ -8,7 +8,7 @@ AnyEvent::ProcessPool - Asynchronously runs code concurrently in a pool of perl 
 
 =head1 VERSION
 
-version 0.02
+version 0.03
 
 =head1 SYNOPSIS
 
@@ -71,7 +71,7 @@ L<AnyEvent::ProcessPool::Pipeline> for details.
   use AnyEvent::ProcessPool::Pipeline;
 
   pipeline workers => 4,
-    in  { get_next_task() }
+    in  { get_next_task() } # list of (code, args array)
     out { do_stuff_with_result(shift->recv) };
 
 =head1 DIAGNOSTICS

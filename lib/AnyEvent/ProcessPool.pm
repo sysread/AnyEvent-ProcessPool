@@ -62,7 +62,7 @@ L<AnyEvent::ProcessPool::Pipeline> for details.
   use AnyEvent::ProcessPool::Pipeline;
 
   pipeline workers => 4,
-    in  { get_next_task() }
+    in  { get_next_task() } # list of (code, args array)
     out { do_stuff_with_result(shift->recv) };
 
 =head1 DIAGNOSTICS
@@ -167,10 +167,10 @@ sub DESTROY {
 }
 
 sub async {
-  my ($self, $code) = @_;
+  my ($self, $code, @args) = @_;
   my $id = next_id;
   $self->{complete}{$id} = AE::cv;
-  push @{$self->{queue}}, [$id, $code];
+  push @{$self->{queue}}, [$id, $code, \@args];
   $self->process_queue;
   return $self->{complete}{$id};
 }
@@ -181,10 +181,10 @@ sub process_queue {
   my $pool  = $self->{pool};
 
   while (@$queue && @$pool) {
-    my ($id, $code) = @{shift @$queue};
+    my ($id, $code, $args) = @{shift @$queue};
     my $worker = shift @$pool;
 
-    $self->{pending}{$id} = $worker->run($code);
+    $self->{pending}{$id} = $worker->run($code, $args);
 
     $self->{pending}{$id}->cb(sub{
       $self->{complete}{$id}->send(shift->recv);

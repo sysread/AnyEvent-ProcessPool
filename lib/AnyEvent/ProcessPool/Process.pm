@@ -78,17 +78,14 @@ sub start {
     },
     on_stdout => sub{
       my ($ps, $line) = @_;
-      my $task = AnyEvent::ProcessPool::Task->new($line);
+      my $task = AnyEvent::ProcessPool::Task->decode($line);
       my $cv = shift @{$self->{pending}};
-      my $result;
 
-      try {
-        $result = $task->result;
-        $cv->send($result);
+      if ($task->failed) {
+        $cv->croak($task->result);
+      } else {
+        $cv->send($task->result);
       }
-      catch {
-        $cv->croak($_);
-      };
 
       if ($self->{limit} && $ps->user->{reqs} <= 0) {
         $self->stop;
@@ -118,13 +115,13 @@ sub start {
 }
 
 sub run {
-  my ($self, $code) = @_;
+  my ($self, $code, $args) = @_;
   $self->await;
 
   my $cv = AE::cv;
   push @{$self->{pending}}, $cv;
 
-  my $task = AnyEvent::ProcessPool::Task->new($code);
+  my $task = AnyEvent::ProcessPool::Task->new($code, $args);
   $self->{ps}->say($task->encode);
   --$self->{ps}->user->{reqs} if $self->{limit};
 

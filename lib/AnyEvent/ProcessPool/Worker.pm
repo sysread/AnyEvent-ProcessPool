@@ -9,7 +9,7 @@ require AnyEvent::ProcessPool::Task;
 sub run {
   local $| = 1;
   while (defined(my $line = <STDIN>)) {
-    my $task = AnyEvent::ProcessPool::Task->new($line);
+    my $task = AnyEvent::ProcessPool::Task->decode($line);
     $task->execute;
     say $task->encode;
   }

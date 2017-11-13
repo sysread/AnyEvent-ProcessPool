@@ -7,7 +7,8 @@ package AnyEvent::ProcessPool::Pipeline;
 
   pipeline workers => 4,
     in {
-      get_next_task();
+      my @task = get_next_task(); # list of (CODE ref $task, ARRAY ref $args)
+      return @task;
     },
     out {
       process_result(shift->recv);
@@ -30,9 +31,9 @@ receives when executing the code specified by C<in>. As results arrive (and not
 necessarily in the order in which they were queued), they are delivered as
 L<condition variables|AnyEvent/CONDITION VARIABLES> (ready ones, guaranteed not
 to block) via the code supplied by C<out>. The pipeline will continue to run
-until C<in> returns C<undef>, after which it will continue to run until all
-pending results have been delivered. C<pipeline> returns the total number of
-tasks processed.
+until C<in> returns an empty list, after which it will continue to run until
+all pending results have been delivered. C<pipeline> returns the total number
+of tasks processed.
 
 Aside from C<in> and C<out>, all other arguments are passed unchanged to
 L<AnyEvent::ProcessPool>'s constructor.
@@ -56,8 +57,8 @@ sub pipeline (%) {
   my $count = 0;
 
   my %pending;
-  while (defined(my $task = $in->())) {
-    my $cv = $pool->async($task);
+  while (my @task = $in->()) {
+    my $cv = $pool->async(@task);
     $pending{$cv} = $cv;
     $cv->cb(sub{ ++$count; $out->(shift) });
   }

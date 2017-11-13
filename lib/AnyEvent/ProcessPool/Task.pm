@@ -1,58 +1,58 @@
 package AnyEvent::ProcessPool::Task;
-# ABSTRACT: AnyEvent::ProcessPool work unit
 
 use strict;
 use warnings;
 use Carp;
+use Const::Fast;
 use Data::Dump::Streamer;
 use MIME::Base64;
 use Try::Catch;
 
+const our $READY => 0;
+const our $DONE  => 1;
+const our $FAIL  => 2;
+
 sub new {
-  my ($class, $arg) = @_;
-
-  my $self = bless {code => undef}, $class;
-
-  if (ref $arg eq 'CODE') {
-    $self->{code} = $arg;
-  }
-  elsif (defined $arg) {
-    my $data = decode_base64($arg);
-    $self->{code} = eval "do{ $data }";
-    $@ && die $@;
-  }
-
-  return $self;
+  my ($class, $code, $args) = @_;
+  bless [$READY, [$code, $args]], $class;
 }
 
-sub encode {
-  my $self = shift;
-  return encode_base64(
-    Dump($self->{code})->Purity(1)->Declare(1)->Indent(0)->Out,
-    ''
-  );
-}
+sub done   { $_[0][0] & $DONE }
+sub failed { $_[0][0] & $FAIL }
 
 sub result {
-  my $self = shift;
-  return $self->{code}->();
+  return $_[0][1] if $_[0][0] & $DONE;
+  return;
 }
 
 sub execute {
   my $self = shift;
-  my $rv = 0;
 
   try {
-    my $result = $self->result;
-    $self->{code} = sub{ $result };
-    $rv = 1;
+    my ($code, $args) = @{$self->[1]};
+    $self->[1] = $code->(@$args);
+    $self->[0] = $DONE;
   }
   catch {
-    my $error = $_;
-    $self->{code} = sub{ croak $error };
+    $self->[0] = $DONE | $FAIL;
+    $self->[1] = $_;
   };
 
-  return $rv;
+  return $self->[0] & $FAIL ? 0 : 1;
+}
+
+sub encode {
+  my $self = shift;
+  my $data = Dump($self)->Purity(1)->Declare(1)->Indent(0)->Out;
+  encode_base64($data, '');
+}
+
+sub decode {
+  my $class = shift;
+  my $data  = decode_base64($_[0]);
+  my $self  = eval "do{ $data }";
+  croak "task decode error: $@" if $@;
+  return $self;
 }
 
 1;

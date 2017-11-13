@@ -1,4 +1,7 @@
 {{$NEXT}}
+- Support for passing parameters to task code
+- Backward incompatible change: pipeline 'in' now expects list of (code, args
+  array) or empty list to signal completion
 
 0.02 2017-11-12
 - Add Async::ProcessPool::Pipeline
