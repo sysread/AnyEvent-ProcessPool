@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.02 2017-11-12
 - Add Async::ProcessPool::Pipeline
 - More thorough cleanup
 - New method AnyEvent::ProcessPool->join
