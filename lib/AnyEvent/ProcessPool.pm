@@ -54,6 +54,17 @@ result when C<recv> is called on it.
 
 Blocks until all pending tasks have completed.
 
+=head1 PIPELINES
+
+Pipelines are another, sometimes simpler, way to use a process pool. See
+L<AnyEvent::ProcessPool::Pipe> for details.
+
+  use AnyEvent::ProcessPool::Pipe;
+
+  pipeline workers => 4,
+    in  { get_next_task() }
+    out { do_stuff_with_result(shift->recv) };
+
 =head1 DIAGNOSTICS
 
 =head2 Task errors

@@ -10,7 +10,7 @@ package AnyEvent::ProcessPool::Pipe;
       get_next_task();
     },
     out {
-      process_result(shift);
+      process_result(shift->recv);
     };
 
 =head1 EXPORTED SUBROUTINES
