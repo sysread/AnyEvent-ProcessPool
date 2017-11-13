@@ -1,9 +1,9 @@
-package AnyEvent::ProcessPool::Pipe;
+package AnyEvent::ProcessPool::Pipeline;
 # ABSTRACT: A simplified, straightforward way to parallelize tasks
 
 =head1 SYNOPSIS
 
-  use AnyEvent::ProcessPool::Pipe;
+  use AnyEvent::ProcessPool::Pipeline;
 
   pipeline workers => 4,
     in {

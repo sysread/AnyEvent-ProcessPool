@@ -1,5 +1,5 @@
 use Test2::Bundle::Extended;
-use AnyEvent::ProcessPool::Pipe;
+use AnyEvent::ProcessPool::Pipeline;
 
 my %recv;
 my @tasks = 1 .. 10;

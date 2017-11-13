@@ -56,10 +56,10 @@ Blocks until all pending tasks have completed.
 
 =head1 PIPELINES
 
-Pipelines are another, sometimes simpler, way to use a process pool. See
-L<AnyEvent::ProcessPool::Pipe> for details.
+Pipelinelines are another, sometimes simpler, way to use a process pool. See
+L<AnyEvent::ProcessPool::Pipeline> for details.
 
-  use AnyEvent::ProcessPool::Pipe;
+  use AnyEvent::ProcessPool::Pipeline;
 
   pipeline workers => 4,
     in  { get_next_task() }
