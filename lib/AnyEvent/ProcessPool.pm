@@ -98,6 +98,8 @@ sub process_queue {
   }
 }
 
+1;
+
 =head1 SYNOPSIS
 
   use AnyEvent::ProcessPool;
@@ -214,5 +216,3 @@ experimental support for 5.22).
 =back
 
 =cut
-
-1;

@@ -1,5 +1,4 @@
 package AnyEvent::ProcessPool::Util;
-
 # ABSTRACT: A multi-process pool for Perl
 
 use strict;

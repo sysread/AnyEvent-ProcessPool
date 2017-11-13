@@ -1,4 +1,5 @@
 package AnyEvent::ProcessPool::Task;
+# ABSTRACT: A serializable work unit
 
 use strict;
 use warnings;
