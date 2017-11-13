@@ -18,14 +18,6 @@ package AnyEvent::ProcessPool::Pipeline;
 
 =head2 pipeline
 
-=over
-
-=item in
-
-=item out
-
-=back
-
 Launches an L<AnyEvent::ProcessPool> and immediately starts processing tasks it
 receives when executing the code specified by C<in>. As results arrive (and not
 necessarily in the order in which they were queued), they are delivered as
@@ -37,6 +29,26 @@ of tasks processed.
 
 Aside from C<in> and C<out>, all other arguments are passed unchanged to
 L<AnyEvent::ProcessPool>'s constructor.
+
+=over
+
+=item in
+
+Supplies the pipeline with a code ref representing the caller's task queue.
+When called, the code ref returns a two item list containing: 1) a code ref to
+be executed in a worker sub-process, and, 2) an (optional) array of arguments
+to be passed to the code ref when called.
+
+The pipeline will call C<in> until an empty list is returned, after which the
+pool will continue to run until all remaining tasks have completed and been
+passed to C<out>.
+
+=item out
+
+Specifies the callback to which results are passed. Results may arrive in any
+order.
+
+=back
 
 =cut
 

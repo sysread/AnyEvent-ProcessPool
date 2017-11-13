@@ -26,10 +26,6 @@ version 0.03
   # Block until result is ready
   my $result = $condvar->recv;
 
-  if ($result eq '...') {
-    ...
-  }
-
 =head1 DESCRIPTION
 
 Executes code using a pool a forked Perl subprocesses. Supports configurable
@@ -55,23 +51,35 @@ if it unexpectedly fails.
 
 =head2 async
 
-Executes the supplied code ref in a worker sub-process. Returns a
+Executes the supplied code ref in a worker sub-process. Remaining (optional)
+arguments are passed unchanged to the code ref in the worker process. Returns a
 L<condvar|AnyEvent/CONDITION VARIABLES> that will block and return the task
 result when C<recv> is called on it.
 
+  # With an anonymous subroutine
+  my $cv = $pool->async(sub{ ... });
+
+  # With a code ref
+  my $cv = $pool->async(\&do_stuff);
+
+  # With optional parameter list
+  my $cv = $pool->async(sub{ ... }, $arg1, $arg2, ...);
+
 =head2 join
 
-Blocks until all pending tasks have completed.
+Blocks until all pending tasks have completed. This does not prevent new tasks
+from being queued while waiting (for example, in the callback of an already
+queued task's condvar).
 
 =head1 PIPELINES
 
-Pipelinelines are another, sometimes simpler, way to use a process pool. See
+Pipelinelines are alternative way of using the process pool. See
 L<AnyEvent::ProcessPool::Pipeline> for details.
 
   use AnyEvent::ProcessPool::Pipeline;
 
   pipeline workers => 4,
-    in  { get_next_task() } # list of (code, args array)
+    in  { get_next_task() }
     out { do_stuff_with_result(shift->recv) };
 
 =head1 DIAGNOSTICS
