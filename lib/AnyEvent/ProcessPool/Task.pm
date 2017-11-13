@@ -4,6 +4,7 @@ package AnyEvent::ProcessPool::Task;
 use strict;
 use warnings;
 use Carp;
+use Class::Load 'load_class';
 use Data::Dump::Streamer;
 use MIME::Base64;
 use Try::Catch;
@@ -29,9 +30,17 @@ sub execute {
   my $self = shift;
 
   try {
-    my ($code, $args) = @{$self->[1]};
-    $self->[1] = $code->(@$args);
-    $self->[0] = DONE;
+    my ($work, $args) = @{$self->[1]};
+
+    if (ref $work eq 'CODE') {
+      $self->[1] = $work->(@$args);
+      $self->[0] = DONE;
+    }
+    else {
+      my $class = load_class($work);
+      $self->[1] = $class->new(@$args)->run;
+      $self->[0] = DONE;
+    }
   }
   catch {
     $self->[0] = DONE | FAIL;

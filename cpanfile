@@ -2,6 +2,7 @@ requires 'perl',                    '5.010';
 requires 'AnyEvent',                '7.14';
 requires 'AnyEvent::Open3::Simple', '0.86';
 requires 'Carp',                    '0';
+requires 'Class::Load',             '0';
 requires 'Config',                  '0';
 requires 'Data::Dump::Streamer',    '0';
 requires 'Data::UUID::MT',          '0';

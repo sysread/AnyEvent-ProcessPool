@@ -156,6 +156,11 @@ arguments are passed unchanged to the code ref in the worker process. Returns a
 L<condvar|AnyEvent/CONDITION VARIABLES> that will block and return the task
 result when C<recv> is called on it.
 
+Alternately, the name of a task class may be supplied. The class must implement
+the methods 'new' (as a constructor) and 'run'. When using a task class, the
+arguments will be passed to the constructor (new) and the result of 'run' will
+be returned.
+
   # With an anonymous subroutine
   my $cv = $pool->async(sub{ ... });
 
@@ -164,6 +169,9 @@ result when C<recv> is called on it.
 
   # With optional parameter list
   my $cv = $pool->async(sub{ ... }, $arg1, $arg2, ...);
+
+  # With a task class
+  my $cv = $pool->async('My::Task', $arg1, ...);
 
 
 =head2 join

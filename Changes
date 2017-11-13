@@ -1,4 +1,6 @@
 {{$NEXT}}
+- Added support for alternately passing a "task class" + args rather than a
+  code ref
 
 0.05 2017-11-13
 - Explicitly drop MSWin32 support intests (AnyEvent::Open3::Simple does not

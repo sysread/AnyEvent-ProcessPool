@@ -9,6 +9,7 @@ subtest 'execute' => sub{
     is $task->execute, 1, 'execute';
     is $task->result, 42, 'result';
     ok $task->done, 'done';
+    ok !$task->failed, '!failed';
   };
 
   subtest 'negative path' => sub{
@@ -17,6 +18,14 @@ subtest 'execute' => sub{
     ok $task->done, 'done';
     ok $task->failed, 'failed';
     like $task->result, qr/failed/, 'result';
+  };
+
+  subtest 'task class' => sub{
+    local @INC = ('t/some/libs', @INC);
+    ok my $task = AnyEvent::ProcessPool::Task->new('TestModule'), 'ctor';
+    is $task->execute, 1, 'execute';
+    ok $task->done, 'done';
+    ok !$task->failed, '!failed' or diag $task->result;
   };
 };
 

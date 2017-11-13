@@ -1,5 +1,7 @@
 package TestModule;
 
-sub foo{ 'bar' }
+sub new{bless {}, shift};
+
+sub run{'bar'}
 
 1;

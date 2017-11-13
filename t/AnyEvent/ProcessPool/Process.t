@@ -59,7 +59,7 @@ subtest 'implicit run' => sub{
 subtest 'includes' => sub{
   subtest 'without' => sub{
     my $proc = AnyEvent::ProcessPool::Process->new;
-    my $async = $proc->run(AnyEvent::ProcessPool::Task->new(sub{require TestModule; TestModule->foo}));
+    my $async = $proc->run(AnyEvent::ProcessPool::Task->new('TestModule'));
     ok my $task = $async->recv, 'result';
     ok $task->done, 'done';
     ok $task->failed, 'failed';
@@ -68,7 +68,7 @@ subtest 'includes' => sub{
 
   subtest 'with' => sub{
     my $proc = AnyEvent::ProcessPool::Process->new(include => ['t/some/libs']);
-    my $async = $proc->run(AnyEvent::ProcessPool::Task->new(sub{require TestModule; TestModule->foo}));
+    my $async = $proc->run(AnyEvent::ProcessPool::Task->new('TestModule'));
     ok my $task = $async->recv, 'result';
     ok $task->done, 'done';
     ok !$task->failed, '!failed';
