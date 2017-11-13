@@ -199,6 +199,12 @@ Thrown when a worker sub-process exits as a result of a signal received.
 Thrown when a worker sub-process terminates with a non-zero exit code. The
 worker will be automatically restarted.
 
+=head1 INCOMPATIBILITIES
+
+Will not work on MSWin32 (although Cygwin should be fine) due to lack of
+support for non-blocking writes to process pipes (see notes in
+L<AnyEvent::Open3::Simple>.
+
 =head1 SEE ALSO
 
 =over

@@ -1,4 +1,6 @@
 {{$NEXT}}
+- Explicitly drop MSWin32 support intests (AnyEvent::Open3::Simple does not
+  support MSWin32 due to lack of support for writing to process pipes)
 
 0.04 2017-11-13
 - More straightforward error handling
