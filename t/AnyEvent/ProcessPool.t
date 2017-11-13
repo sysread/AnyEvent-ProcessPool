@@ -5,8 +5,14 @@ use AnyEvent;
 subtest 'basics' => sub{
   ok my $pool = AnyEvent::ProcessPool->new(limit => 2), 'ctor';
   ok $pool->{workers} >= 1, 'workers defalt value is set';
-  ok my $async = $pool->async(sub{ shift }, 42), 'run';
+  ok my $async = $pool->async(sub{ shift }, 42), 'async';
   is $async->recv, 42, 'result';
+};
+
+subtest 'errors' => sub{
+  ok my $pool = AnyEvent::ProcessPool->new(limit => 2), 'ctor';
+  ok my $cv = $pool->async(sub{ die "fnord" }), 'async';
+  like dies{ $cv->recv }, qr/fnord/, 'dies with expected error';
 };
 
 subtest 'queue' => sub{

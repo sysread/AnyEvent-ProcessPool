@@ -80,12 +80,7 @@ sub start {
       my ($ps, $line) = @_;
       my $task = AnyEvent::ProcessPool::Task->decode($line);
       my $cv = shift @{$self->{pending}};
-
-      if ($task->failed) {
-        $cv->croak($task->result);
-      } else {
-        $cv->send($task->result);
-      }
+      $cv->send($task);
 
       if ($self->{limit} && $ps->user->{reqs} <= 0) {
         $self->stop;
@@ -115,13 +110,12 @@ sub start {
 }
 
 sub run {
-  my ($self, $code, $args) = @_;
+  my ($self, $task) = @_;
   $self->await;
 
   my $cv = AE::cv;
   push @{$self->{pending}}, $cv;
 
-  my $task = AnyEvent::ProcessPool::Task->new($code, $args);
   $self->{ps}->say($task->encode);
   --$self->{ps}->user->{reqs} if $self->{limit};
 

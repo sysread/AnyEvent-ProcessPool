@@ -1,4 +1,6 @@
 {{$NEXT}}
+- More straightforward error handling
+- Existing pool may be specified to pipeline
 
 0.03 2017-11-13
 - Support for passing parameters to task code

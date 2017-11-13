@@ -27,6 +27,12 @@ until C<in> returns an empty list, after which it will continue to run until
 all pending results have been delivered. C<pipeline> returns the total number
 of tasks processed.
 
+Optionally, an existing pool may be specified using the C<pool> parameter.
+
+  pipeline pool => $pool,
+    in  {...},
+    out {...};
+
 Aside from C<in> and C<out>, all other arguments are passed unchanged to
 L<AnyEvent::ProcessPool>'s constructor.
 
@@ -65,7 +71,7 @@ sub pipeline (%) {
   my %param = @_;
   my $in    = delete $param{in};
   my $out   = delete $param{out};
-  my $pool  = AnyEvent::ProcessPool->new(%param);
+  my $pool  = delete $param{pool} || AnyEvent::ProcessPool->new(%param);
   my $count = 0;
 
   my %pending;
