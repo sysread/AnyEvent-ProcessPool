@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.03 2017-11-13
 - Support for passing parameters to task code
 - Backward incompatible change: pipeline 'in' now expects list of (code, args
   array) or empty list to signal completion
