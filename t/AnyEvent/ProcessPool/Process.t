@@ -1,9 +1,8 @@
 use Test2::Bundle::Extended;
 use AnyEvent::ProcessPool::Process;
-use AnyEvent::ProcessPool::TestUtil;
 use AnyEvent;
 
-timed_subtest is_running => sub{
+subtest is_running => sub{
   ok my $proc = AnyEvent::ProcessPool::Process->new, 'ctor';
 
   ok !$proc->is_running, '!is_running';
@@ -15,7 +14,7 @@ timed_subtest is_running => sub{
   ok $proc->pid, 'pid';
 };
 
-timed_subtest run => sub{
+subtest run => sub{
   my $proc = AnyEvent::ProcessPool::Process->new;
 
   ok my $async = $proc->run(sub{ 42 }), 'run';
@@ -25,7 +24,7 @@ timed_subtest run => sub{
   like dies{ $fail->recv }, qr/fnord/, 'croak';
 };
 
-timed_subtest limit => sub{
+subtest limit => sub{
   my $proc = AnyEvent::ProcessPool::Process->new(limit => 1);
 
   $proc->await;
@@ -38,7 +37,7 @@ timed_subtest limit => sub{
   is $proc->run(sub{'fnord'})->recv, 'fnord', 'functions after worker replacement';
 };
 
-timed_subtest 'implicit run' => sub{
+subtest 'implicit run' => sub{
   my $proc = AnyEvent::ProcessPool::Process->new;
   ok !$proc->is_running, '!is_running before call to run';
   my $async = $proc->run(sub{ 42 });

@@ -28,12 +28,12 @@ pool size, automatically restarting processes after a configurable number of
 requests, and closures (with the caveat that changes are not propagated back to
 the parent process).
 
-=head1 ATTRIBUTES
+=head1 CONSTRUCTOR
 
 =head2 workers
 
-Required attribute specifying the number of worker processes to launch. Must be
-a positive integer.
+Required attribute specifying the number of worker processes to launch.
+Defaults to the number of CPUs.
 
 =head2 limit
 
@@ -49,6 +49,10 @@ if it unexpectedly fails.
 Executes the supplied code ref in a worker sub-process. Returns a
 L<condvar|AnyEvent/CONDITION VARIABLES> that will block and return the task
 result when C<recv> is called on it.
+
+=head2 join
+
+Blocks until all pending tasks have completed.
 
 =head1 DIAGNOSTICS
 
@@ -76,7 +80,7 @@ Thrown when a worker sub-process exits as a result of a signal received.
 Thrown when a worker sub-process terminates with a non-zero exit code. The
 worker will be automatically restarted.
 
-=head1 ALTERNATIVES
+=head1 SEE ALSO
 
 =over
 
@@ -99,13 +103,13 @@ use warnings;
 use Carp;
 use AnyEvent;
 use AnyEvent::ProcessPool::Process;
-use AnyEvent::ProcessPool::Util 'next_id';
+use AnyEvent::ProcessPool::Util qw(next_id cpu_count);
 
 sub new {
   my ($class, %param) = @_;
 
   my $self = bless {
-    workers  => $param{workers} || croak 'expected parameter "workers"',
+    workers  => $param{workers} || cpu_count,
     limit    => $param{limit},
     pool     => [], # array of AE::PP::Process objects
     queue    => [], # array of [id, code] tasks
@@ -122,6 +126,15 @@ sub new {
   return $self;
 }
 
+sub join {
+  my $self = shift;
+  foreach my $task_id (keys %{$self->{complete}}) {
+    if (my $cv = $self->{complete}{$task_id}) {
+      $cv->recv;
+    }
+  }
+}
+
 sub DESTROY {
   my ($self, $global) = @_;
 
@@ -135,7 +148,9 @@ sub DESTROY {
 
     # Terminate any workers still alive
     if (ref $self->{pool}) {
-      $_->stop foreach @{$self->{pool}};
+      foreach my $worker (@{$self->{pool}}) {
+        $worker->stop if $worker;
+      }
     }
   }
 }

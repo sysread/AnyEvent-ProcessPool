@@ -34,8 +34,11 @@ sub DESTROY {
   my $self = shift;
   $self->{ps}->close if $self->{ps};
   if (ref $self->{pending}) {
-    $_->croak('AnyEvent::ProcessPool::Process went out of scope with pending tasks')
-      foreach @{$self->{pending}};
+    foreach my $cv (@{$self->{pending}}) {
+      if ($cv) {
+        $cv->croak('AnyEvent::ProcessPool::Process went out of scope with pending tasks');
+      }
+    }
   }
 }
 

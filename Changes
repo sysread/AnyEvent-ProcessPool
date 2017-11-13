@@ -1,4 +1,8 @@
 {{$NEXT}}
+- Add Async::ProcessPool::Pipe
+- More thorough cleanup
+- New method AnyEvent::ProcessPool->join
+- 'workers' now defaults to number of cpus (threw an error previously)
 
 0.01 2017-11-12
 - Initial release

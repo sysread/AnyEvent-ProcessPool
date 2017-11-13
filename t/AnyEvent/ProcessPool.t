@@ -1,11 +1,10 @@
 use Test2::Bundle::Extended;
-use AnyEvent::ProcessPool::TestUtil;
 use AnyEvent::ProcessPool;
 use AnyEvent;
-use Time::HiRes qw(time);
 
 subtest 'basics' => sub{
-  ok my $pool = AnyEvent::ProcessPool->new(limit => 2, workers => 2), 'ctor';
+  ok my $pool = AnyEvent::ProcessPool->new(limit => 2), 'ctor';
+  ok $pool->{workers} >= 1, 'workers defalt value is set';
   ok my $async = $pool->async(sub{ 42 }), 'run';
   is $async->recv, 42, 'result';
 };
