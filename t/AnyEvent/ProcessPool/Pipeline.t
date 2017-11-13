@@ -1,8 +1,6 @@
 use Test2::Bundle::Extended;
 use AnyEvent::ProcessPool::Pipeline;
 
-bail_out 'OS unsupported' if $^O eq 'MSWin32';
-
 my %recv;
 my @tasks  = 1 .. 10;
 my %expect = map{ $_ => 1 } @tasks;

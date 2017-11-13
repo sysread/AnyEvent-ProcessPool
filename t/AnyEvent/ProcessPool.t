@@ -2,8 +2,6 @@ use Test2::Bundle::Extended;
 use AnyEvent::ProcessPool;
 use AnyEvent;
 
-bail_out 'OS unsupported' if $^O eq 'MSWin32';
-
 subtest 'basics' => sub{
   ok my $pool = AnyEvent::ProcessPool->new(limit => 2), 'ctor';
   ok $pool->{workers} >= 1, 'workers defalt value is set';

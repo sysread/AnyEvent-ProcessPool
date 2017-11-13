@@ -1,38 +1,5 @@
+package AnyEvent::ProcessPool::Pipeline;
 # ABSTRACT: A simplified, straightforward way to parallelize tasks
-package AnyEvent::ProcessPool::Pipeline {
-  use strict;
-  use warnings;
-  use AnyEvent::ProcessPool;
-  use Try::Catch;
-
-  use parent 'Exporter';
-
-  our @EXPORT = qw(pipeline in out);
-
-  sub pipeline (%) {
-    my %param = @_;
-    my $in    = delete $param{in};
-    my $out   = delete $param{out};
-    my $pool  = delete $param{pool} || AnyEvent::ProcessPool->new(%param);
-    my $count = 0;
-
-    my %pending;
-    while (my @task = $in->()) {
-      my $cv = $pool->async(@task);
-      $pending{$cv} = $cv;
-      $cv->cb(sub{ ++$count; $out->(shift) });
-    }
-
-    $pool->join; # wait for all tasks to complete
-
-    return $count;
-  }
-
-  sub in  (&) { return (in  => $_[0]) }
-  sub out (&) { return (out => $_[0]) }
-
-  1;
-};
 
 =head1 SYNOPSIS
 
@@ -90,3 +57,36 @@ order.
 =back
 
 =cut
+
+use strict;
+use warnings;
+use AnyEvent::ProcessPool;
+use Try::Catch;
+
+use parent 'Exporter';
+
+our @EXPORT = qw(pipeline in out);
+
+sub pipeline (%) {
+  my %param = @_;
+  my $in    = delete $param{in};
+  my $out   = delete $param{out};
+  my $pool  = delete $param{pool} || AnyEvent::ProcessPool->new(%param);
+  my $count = 0;
+
+  my %pending;
+  while (my @task = $in->()) {
+    my $cv = $pool->async(@task);
+    $pending{$cv} = $cv;
+    $cv->cb(sub{ ++$count; $out->(shift) });
+  }
+
+  $pool->join; # wait for all tasks to complete
+
+  return $count;
+}
+
+sub in  (&) { return (in  => $_[0]) }
+sub out (&) { return (out => $_[0]) }
+
+1;
