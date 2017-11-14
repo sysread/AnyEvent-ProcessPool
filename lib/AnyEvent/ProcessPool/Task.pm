@@ -1,8 +1,7 @@
 package AnyEvent::ProcessPool::Task;
 # ABSTRACT: A serializable work unit
 
-use strict;
-use warnings;
+use common::sense;
 use Carp;
 use Class::Load 'load_class';
 use Data::Dump::Streamer;
@@ -52,7 +51,7 @@ sub execute {
 
 sub encode {
   my $self = shift;
-  my $data = Dump($self)->Purity(1)->Declare(1)->Indent(0)->Out;
+  my $data = DumpLex($self)->Purity(1)->Declare(1)->Indent(0)->Out;
   encode_base64($data, '');
 }
 

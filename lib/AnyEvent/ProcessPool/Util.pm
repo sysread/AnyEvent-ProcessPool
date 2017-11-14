@@ -1,9 +1,9 @@
 package AnyEvent::ProcessPool::Util;
 # ABSTRACT: A multi-process pool for Perl
 
-use strict;
-use warnings;
 use v5.10;
+use common::sense;
+
 use parent 'Exporter';
 
 use Data::UUID::MT;

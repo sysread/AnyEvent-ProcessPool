@@ -1,8 +1,7 @@
 package AnyEvent::ProcessPool::Pipeline;
 # ABSTRACT: A simplified, straightforward way to parallelize tasks
 
-use strict;
-use warnings;
+use common::sense;
 use AnyEvent::ProcessPool;
 use Try::Catch;
 

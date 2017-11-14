@@ -1,4 +1,7 @@
 {{$NEXT}}
+- Use common::sense
+- Use DumpLex and PadWalker to include as much closing state as possible in
+  serialized task code
 
 0.06 2017-11-13
 - Added support for alternately passing a "task class" + args rather than a

@@ -1,9 +1,7 @@
 package AnyEvent::ProcessPool::Process;
 # ABSTRACT: Manages an individual worker process
 
-use strict;
-use warnings;
-
+use common::sense;
 use Config;
 use AnyEvent;
 use AnyEvent::Open3::Simple;

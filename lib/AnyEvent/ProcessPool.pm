@@ -1,8 +1,7 @@
 package AnyEvent::ProcessPool;
 # ABSTRACT: Asynchronously runs code concurrently in a pool of perl processes
 
-use strict;
-use warnings;
+use common::sense;
 use Carp;
 use AnyEvent;
 use AnyEvent::ProcessPool::Process;
