@@ -4,6 +4,7 @@ package AnyEvent::ProcessPool;
 use common::sense;
 use Carp;
 use AnyEvent;
+use AnyEvent::Util;
 use AnyEvent::ProcessPool::Process;
 use AnyEvent::ProcessPool::Task;
 use AnyEvent::ProcessPool::Util qw(next_id cpu_count);
@@ -15,6 +16,7 @@ sub new {
     workers  => $param{workers} || cpu_count,
     limit    => $param{limit},
     include  => $param{include},
+    pid      => $$,
     pool     => [], # array of AE::PP::Process objects
     queue    => [], # array of [id, code] tasks
     complete => {}, # task_id => condvar: signals result to caller
@@ -22,11 +24,12 @@ sub new {
   }, $class;
 
   # Initialize workers but do not yet wait for them to be started
+  if ($self->{limit}) {
+    $AnyEvent::Util::MAX_FORKS = $self->{limit};
+  }
+
   foreach (1 .. $self->{workers}) {
-    my $worker = AnyEvent::ProcessPool::Process->new(
-      limit   => $self->{limit},
-      include => $self->{include},
-    );
+    my $worker = AnyEvent::ProcessPool::Process->new(limit => $self->{limit});
     push @{$self->{pool}}, $worker;
   }
 
@@ -44,28 +47,29 @@ sub join {
 
 sub DESTROY {
   my ($self, $global) = @_;
+  return unless $self;
+  return unless $self->{pid} == $$;
 
-  if ($self) {
-    # Unblock watchers for any remaining pending tasks
-    if (ref $self->{pending}) {
-      foreach my $cv (values %{$self->{pending}}) {
-        $cv->croak('AnyEvent::ProcessPool destroyed with pending tasks remaining');
-      }
+  # Unblock watchers for any remaining pending tasks
+  if (ref $self->{pending}) {
+    foreach my $cv (values %{$self->{pending}}) {
+      $cv->croak('AnyEvent::ProcessPool destroyed with pending tasks remaining');
     }
+  }
 
-    # Terminate any workers still alive
-    if (ref $self->{pool}) {
-      foreach my $worker (@{$self->{pool}}) {
-        $worker->stop if $worker;
-      }
+  # Terminate any workers still alive
+  if (ref $self->{pool}) {
+    foreach my $worker (@{$self->{pool}}) {
+      $worker->stop if $worker;
     }
   }
 }
 
 sub async {
-  my ($self, $code, @args) = @_;
-  my $id = next_id;
-  my $task = AnyEvent::ProcessPool::Task->new($code, \@args);
+  my $self = shift;
+  my $code = shift;
+  my $id   = next_id;
+  my $task = AnyEvent::ProcessPool::Task->new($code, [@_]);
   $self->{complete}{$id} = AE::cv;
   push @{$self->{queue}}, [$id, $task];
   $self->process_queue;
@@ -77,7 +81,7 @@ sub process_queue {
   my $queue = $self->{queue};
   my $pool  = $self->{pool};
 
-  while (@$queue && @$pool) {
+  if (@$queue && @$pool) {
     my ($id, $task) = @{shift @$queue};
     my $worker = shift @$pool;
 
@@ -95,7 +99,7 @@ sub process_queue {
       delete $self->{pending}{$id};
       delete $self->{complete}{$id};
 
-      push @$pool, $worker;
+      push @{$self->{pool}}, $worker;
       $self->process_queue;
     });
   }
@@ -198,29 +202,12 @@ Error messages resulting from a C<die> or C<croak> in task code executed in a
 worker process are rethrown in the parent process when the condition variable's
 C<recv> method is called.
 
-=head2 "AnyEvent::ProcessPool::Worker: ..." (warning)
+=head1 CAVEATS ON MSWIN32
 
-When a worker sub-process emits output to C<STDERR>, the process pool warns
-the message out to its own C<STDERR>.
-
-=head2 "error launching worker process: ..."
-
-Thrown when a worker sub-process failed to launch due to an execution error.
-
-=head2 "worker terminated in response to signal: ..."
-
-Thrown when a worker sub-process exits as a result of a signal received.
-
-=head2 "worker terminated with non-zero exit status: ..."
-
-Thrown when a worker sub-process terminates with a non-zero exit code. The
-worker will be automatically restarted.
-
-=head1 INCOMPATIBILITIES
-
-Will not work on MSWin32 (although Cygwin should be fine) due to lack of
-support for non-blocking writes to process pipes (see notes in
-L<AnyEvent::Open3::Simple>.
+In addition to the usual caveats with regard to emulated forking on Windows,
+the platform's poor support for pipes means resorting to a pair of TCP sockets
+instead (which works but is much, much, slower). See the notes for
+C<portable_socketpair> and C<fork_call> in L<AnyEvent::Util>.
 
 =head1 SEE ALSO
 
