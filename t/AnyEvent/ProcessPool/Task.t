@@ -1,7 +1,7 @@
 use Test2::Bundle::Extended;
 use AnyEvent::ProcessPool::Task;
 
-#bail_out 'OS unsupported' if $^O eq 'MSWin32';
+bail_out 'OS unsupported' if $^O eq 'MSWin32';
 
 subtest 'execute' => sub{
   subtest 'positive path' => sub{

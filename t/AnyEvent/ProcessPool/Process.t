@@ -3,7 +3,7 @@ use AnyEvent::ProcessPool::Process;
 use AnyEvent::ProcessPool::Task;
 use AnyEvent;
 
-#bail_out 'OS unsupported' if $^O eq 'MSWin32';
+bail_out 'OS unsupported' if $^O eq 'MSWin32';
 
 subtest is_running => sub{
   ok my $proc = AnyEvent::ProcessPool::Process->new, 'ctor';
