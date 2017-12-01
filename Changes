@@ -1,4 +1,6 @@
 {{$NEXT}}
+
+0.07 2017-12-01
 - Use common::sense
 - Use DumpLex and PadWalker to include as much closing state as possible in
   serialized task code
