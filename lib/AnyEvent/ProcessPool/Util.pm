@@ -57,7 +57,7 @@ sub cpu_count {
       last OS_CHECK;
     };
 
-    /linux/i && do {
+    /linux|android/i && do {
       my @output; local *PROC;
       if ( open PROC, "< /proc/cpuinfo" ) { ## no critic
         @output = grep /^processor/ => <PROC>;
@@ -87,7 +87,7 @@ sub cpu_count {
 
     $cpus = "";
     require Carp;
-    Carp::carp( "get_ncpu: unknown operationg system" );
+    Carp::carp('cpu_count: unknown operating system');
   }
 
   return sprintf '%d', ($cpus || 1);
