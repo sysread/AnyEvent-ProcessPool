@@ -1,107 +1,126 @@
 package AnyEvent::ProcessPool::Process;
-# ABSTRACT: Supervisor for a single, forked process
+# ABSTRACT: Manages an individual worker process
 
 use common::sense;
-
-use Moo;
-use Carp;
+use Config;
 use AnyEvent;
-use AnyEvent::Handle;
-use AnyEvent::Util qw(fork_call portable_socketpair fh_nonblocking);
+use AnyEvent::Open3::Simple;
 use AnyEvent::ProcessPool::Task;
-use AnyEvent::ProcessPool::Util qw(next_id cpu_count);
+use AnyEvent::ProcessPool::Util 'next_id';
+use String::Escape 'backslash';
 use Try::Catch;
 
-has limit   => (is => 'ro');
-has handle  => (is => 'rw', clearer => 1, predicate => 'is_running');
-has count   => (is => 'rw', default => sub{ 0 });
-has stopped => (is => 'rw', default => sub{ 0 });
+my $perl = $Config{perlpath};
+my $ext  = $Config{_exe};
+$perl .= $ext if $^O ne 'VMS' && $perl !~ /$ext$/i;
+my @inc = map { sprintf('-I%s', backslash($_)) } @_, @INC;
+my $cmd = join ' ', @inc, q(-MAnyEvent::ProcessPool::Worker -e 'AnyEvent::ProcessPool::Worker::run()');
 
-sub DEMOLISH {
+sub new {
+  my ($class, %param) = @_;
+  my $include = $param{include} || [];
+
+  return bless {
+    id      => next_id,
+    limit   => $param{limit},
+    include => join(' ', map { sprintf('-I%s', backslash($_)) } @$include),
+    started => undef,
+    process => undef,
+    ps      => undef,
+    pending => [],
+  }, $class;
+}
+
+sub DESTROY {
   my $self = shift;
-  $self->stop if $self->is_running;
+  $self->{ps}->close if $self->{ps};
+  if (ref $self->{pending}) {
+    foreach my $cv (@{$self->{pending}}) {
+      if ($cv) {
+        $cv->croak('AnyEvent::ProcessPool::Process went out of scope with pending tasks');
+      }
+    }
+  }
+}
+
+sub pid {
+  my $self = shift;
+  return $self->{ps}->pid if $self->is_running;
+}
+
+sub is_running {
+  my $self = shift;
+  return defined $self->{started}
+      && $self->{started}->ready;
+}
+
+sub await {
+  my $self = shift;
+  $self->start unless $self->is_running;
+  $self->{started}->recv;
 }
 
 sub stop {
   my $self = shift;
-  $self->stopped(1);
-  $self->handle->push_shutdown if $self->handle;
+  if (defined $self->{process}) {
+    $self->{ps}->close;
+    undef $self->{started};
+    undef $self->{process};
+    undef $self->{ps};
+  }
 }
 
-sub has_limit {
+sub start {
   my $self = shift;
-  return defined $self->limit;
-}
+  $self->{started} = AE::cv;
+  $self->{process} = AnyEvent::Open3::Simple->new(
+    on_start => sub{
+      $self->{started}->send;
+    },
+    on_stdout => sub{
+      my ($ps, $line) = @_;
+      my $task = AnyEvent::ProcessPool::Task->decode($line);
+      my $cv = shift @{$self->{pending}};
+      $cv->send($task);
 
-sub has_capacity {
-  my $self = shift;
-  return $self->is_running && (!$self->has_limit || $self->count < $self->limit);
+      if ($self->{limit} && $ps->user->{reqs} <= 0) {
+        $self->stop;
+      }
+    },
+    on_stderr => sub{
+      warn "AnyEvent::ProcessPool::Worker: $_[1]\n";
+    },
+    on_error => sub{
+      die "error launching worker process: $_[0]";
+    },
+    on_signal => sub{
+      warn "worker terminated in response to signal: $_[1]";
+      $self->stop;
+    },
+    on_fail => sub{
+      warn "worker terminated with non-zero exit status: $_[1]";
+      $self->stop;
+    },
+  );
+
+  $self->{process}->run("$perl $self->{include} $cmd", sub{
+    my $ps = shift;
+    $ps->user({reqs => $self->{limit}}) if $self->{limit};
+    $self->{ps} = $ps;
+  });
 }
 
 sub run {
   my ($self, $task) = @_;
-  return if $self->stopped;
-
-  if (!$self->has_capacity) {
-    if (my $handle = $self->handle) {
-      $self->clear_handle;
-      $handle->on_eof(sub{ undef $handle });
-      $handle->push_shutdown;
-    }
-
-    $self->spawn;
-  }
+  $self->await;
 
   my $cv = AE::cv;
+  push @{$self->{pending}}, $cv;
 
-  $self->count($self->count + 1);
-  $self->handle->push_write($task->encode . "\n");
-  $self->handle->push_read(line => "\n", sub{
-    my ($handle, $line, $eol) = @_;
-    my $task = AnyEvent::ProcessPool::Task->decode($line);
-    $cv->send($task);
-  });
+  $self->{ps}->say($task->encode);
+  --$self->{ps}->user->{reqs} if $self->{limit};
 
   return $cv;
-}
-
-sub spawn {
-  my $self = shift;
-  return if $self->stopped;
-
-  my ($child, $parent) = portable_socketpair;
-
-  fh_nonblocking $child, 1;
-  my $handle = AnyEvent::Handle->new(
-    fh => $child,
-    on_eol => sub{ warn "$$ EOL: @_" },
-    on_error => sub{ warn "$$ ERROR: @_" },
-  );
-
-  my $forked = fork_call {
-    close $child;
-    local $| = 1;
-
-    my $count = 0;
-
-    while (defined(my $line = <$parent>)) {
-      my $task = AnyEvent::ProcessPool::Task->decode($line);
-      $task->execute;
-
-      syswrite $parent, $task->encode . "\n";
-
-      if ($self->has_limit && ++$count >= $self->limit) {
-        break;
-      }
-    }
-  }
-  sub {
-  };
-
-  close $parent;
-
-  $self->handle($handle);
-  $self->count(0);
 }
 
 1;

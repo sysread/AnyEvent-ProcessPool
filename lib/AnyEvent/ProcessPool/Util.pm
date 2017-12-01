@@ -3,8 +3,10 @@ package AnyEvent::ProcessPool::Util;
 
 use v5.10;
 use common::sense;
-use Data::UUID::MT;
+
 use parent 'Exporter';
+
+use Data::UUID::MT;
 
 our @EXPORT_OK = qw(
   next_id
@@ -13,7 +15,7 @@ our @EXPORT_OK = qw(
 
 sub next_id {
   state $ug = Data::UUID::MT->new(version => 4);
-  $ug->create_string;
+  $ug->create_hex;
 }
 
 #-------------------------------------------------------------------------------

@@ -6,7 +6,7 @@ bail_out 'OS unsupported' if $^O eq 'MSWin32';
 
 subtest 'basics' => sub{
   ok my $pool = AnyEvent::ProcessPool->new(limit => 2), 'ctor';
-  ok $pool->{workers} > 0, 'workers default value is set';
+  ok $pool->{workers} >= 1, 'workers defalt value is set';
   ok my $async = $pool->async(sub{ shift }, 42), 'async';
   is $async->recv, 42, 'result';
 };
